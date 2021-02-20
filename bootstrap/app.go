@@ -1,9 +1,10 @@
 package bootstrap
 
 import (
+	"github.com/Masterminds/sprig"
 	"github.com/gin-gonic/gin"
 	"github.com/kataras/iris/v12/sessions"
-	"log"
+	"html/template"
 	"time"
 )
 
@@ -24,15 +25,21 @@ func New(appName string, cgs ...Configurator) *App {
 
 	t:=time.Now()
 	app := &App{
-		Engine: gin.Default(),
+		Engine: engine(),
 		AppName:appName,
 		AppSpawnDate: t,
 	}
-	log.Println(t.String())
 
 	app.Configure(cgs...)
 
 	return app
+}
+
+func engine() *gin.Engine {
+	e := gin.Default()
+	tpl := template.Must(template.New("base").Funcs(sprig.FuncMap()).ParseGlob("views/*/*.html"))
+	e.SetHTMLTemplate(tpl)
+	return  e
 }
 
 func (app *App) Configure(cgs ...Configurator)  {
@@ -42,6 +49,5 @@ func (app *App) Configure(cgs ...Configurator)  {
 }
 
 func (app *App) Bootstrap() *App {
-	app.LoadHTMLGlob("templates/*/*")
 	return app
 }

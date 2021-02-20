@@ -1,0 +1,10 @@
+{{ define "content" }}
+<ul>
+    {{ range .sources }}
+    <div>{{ .resolution }}</div>
+    <div>{{ .uri }}</div>
+    <div>{{ .mime }}</div>
+    {{ end }}
+</ul>
+
+{{ end }}

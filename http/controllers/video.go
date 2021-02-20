@@ -1,7 +1,9 @@
 package controllers
 
 import (
+	"encoding/json"
 	"github.com/gin-gonic/gin"
+	"github.com/gocolly/colly/v2"
 	"gorm.io/gorm"
 	"iwara/database"
 	"iwara/models"
@@ -21,12 +23,18 @@ func (v *VideoController) Get(c *gin.Context) {
 
 func (v *VideoController) Show(c *gin.Context) {
 	id := c.Param("video")
-	var d models.Video
+	var video models.Video
 	database.Sql(func(db *gorm.DB) {
-		db.First(&d, id)
+		db.First(&video, id)
 	})
-	url := spider.Video(d.Url)
-	c.HTML(http.StatusOK, "show.tpl", gin.H{
-		url: url,
+	sc :=spider.NewCollector()
+	var body interface{}
+	sc.OnResponse(func(res *colly.Response) {
+		_ = json.Unmarshal(res.Body, &body)
+	})
+	_ = sc.Visit("https://ecchi.iwara.tv/api/video/" + video.HashId)
+	c.HTML(http.StatusOK, "layout.html", gin.H{
+		"sources": body,
+		"name":    "video",
 	})
 }

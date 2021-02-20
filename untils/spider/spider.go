@@ -16,7 +16,7 @@ import (
 )
 
 const Host = "ecchi.iwara.tv"
-const attempts int = 6
+const attempts int = 3
 const sleep time.Duration = 1 * time.Second
 
 var count int = 0
@@ -40,9 +40,6 @@ func list() {
 	defer ants.Release()
 	total := Total()
 	c := NewCollector()
-	c.OnError(func(r *colly.Response, e error) {
-		log.Println(e)
-	})
 	c.OnHTML("div.node.node-video.node-teaser.node-teaser", func(e *colly.HTMLElement) {
 		id, _ := strconv.ParseUint(e.Attr("id")[5:], 10, 32)
 		viewStr := e.ChildText("div.left-icon.likes-icon")
@@ -55,10 +52,10 @@ func list() {
 		}
 		star, _ := strconv.Atoi(e.ChildText("div.right-icon.likes-icon"))
 		url := fmt.Sprintf("https://ecchi.iwara.tv%s", e.ChildAttr("h3.title a", "href"))
-		urlSlice := strings.Split(url, "/")
+		urlSlice := strings.Split(strings.Split(url, "?")[0], "/")
 
 		video := &models.Video{
-			Title:  e.ChildText("h3.title a"),
+			Title:  Addslashes(e.ChildText("h3.title a")),
 			Url:    url,
 			Poster: fmt.Sprintf("https:%s", e.ChildAttr("div.field-item.even img", "src")),
 			View:   view,
@@ -73,7 +70,7 @@ func list() {
 				db.Create(&video)
 				count++
 			} else {
-				log.Printf("更新视频：%s", video.Title)
+				log.Printf("更新视频信息：%s", video.Title)
 				db.Select("View", "Star").Updates(video)
 				count++
 			}
@@ -83,15 +80,12 @@ func list() {
 	for i := 1; i <= total; i++ {
 		c.UserAgent = RandomUserAgent()
 		url := fmt.Sprintf("https://ecchi.iwara.tv/videos?sort=likes&page=%d", i)
-		err := untils.Retry(attempts, sleep, func() error {
-			wg.Add(1)
-			var err error
-			_ = pool.Submit(func() {
-				log.Printf("当前正在访问：%s", url)
-				err = c.Visit(url)
-				wg.Done()
-			})
-			return err
+		wg.Add(1)
+		var err error
+		_ = pool.Submit(func() {
+			log.Printf("当前正在访问：%s", url)
+			err = c.Visit(url)
+			wg.Done()
 		})
 		if err != nil {
 			log.Printf(err.Error())
@@ -145,5 +139,28 @@ func NewCollector() *colly.Collector {
 		// colly.Async(true),
 	)
 	_ = c.SetProxy("http://127.0.0.1:1087")
+	c.OnError(func(res *colly.Response, e error) {
+		log.Println(e)
+		log.Printf("请求%s出错，将进行重试", res.Request.URL)
+		// todo:最大重试次数
+		err := res.Request.Retry()
+		log.Println(err)
+	})
+
 	return c
+}
+
+func Addslashes(str string) string {
+	var tmpRune []rune
+	strRune := []rune(str)
+	for _, ch := range strRune {
+		switch ch {
+		case []rune{'\\'}[0], []rune{'"'}[0], []rune{'\''}[0]:
+			tmpRune = append(tmpRune, []rune{'\\'}[0])
+			tmpRune = append(tmpRune, ch)
+		default:
+			tmpRune = append(tmpRune, ch)
+		}
+	}
+	return string(tmpRune)
 }
