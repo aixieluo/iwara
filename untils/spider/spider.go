@@ -139,10 +139,21 @@ func NewCollector() *colly.Collector {
 		// colly.Async(true),
 	)
 	_ = c.SetProxy("http://127.0.0.1:1087")
+	var retryList map[string]int
 	c.OnError(func(res *colly.Response, e error) {
-		log.Println(e)
-		log.Printf("请求%s出错，将进行重试", res.Request.URL)
-		// todo:最大重试次数
+		url := res.Request.URL.String()
+		if count, ok := retryList[url]; ok {
+			if count > 3 {
+				log.Printf("请求%s出错超出最大次数", url)
+				// todo: 保存地址
+				return
+			} else {
+				retryList[url]++
+			}
+		} else {
+			retryList[url] = 1
+		}
+		log.Printf("请求%s出错，将进行第%d次重试", url, retryList[url])
 		err := res.Request.Retry()
 		log.Println(err)
 	})

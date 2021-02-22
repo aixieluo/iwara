@@ -6,7 +6,7 @@ import (
 
 const timing string  = "0 0 0 1/1 * ?"
 
-func Schedules(fn func()) {
+func Schedule(fn func(), args ...interface{}) {
 	c := cron.New(cron.WithSeconds())
 
 	_, _ = c.AddFunc(timing, func() {

@@ -16,12 +16,12 @@ type Model struct {
 
 func Paginate(c *gin.Context) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
-		page, _ := strconv.Atoi(c.Param("page"))
+		page, _ := strconv.Atoi(c.Query("page"))
 		if page < 1 {
 			page = 1
 		}
 
-		perPage, _ := strconv.Atoi(c.Param("perPage"))
+		perPage, _ := strconv.Atoi(c.Query("perPage"))
 		switch {
 		case perPage > 100:
 			perPage = 100
