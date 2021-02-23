@@ -1,8 +1,20 @@
 version: '3'
 
 services:
+  database:
+    image: mysql:5.7
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: "123123"
+    volumes:
+      - $PWD/data.sql:/docker-entrypoint-initdb.d/data.sql
+    ports:
+      - '3308:3306'
+
+
   iwara:
     image: iwara
+    container_name: iwara
     volumes:
       - $PWD:/go/src/iwara
     environment:
@@ -11,14 +23,23 @@ services:
       GOPATH: "/go"
     ports:
       - "3939:3939"
+      - "1087:1087"
+    command: go build main.go
     depends_on:
       - database
 
-  database:
-    image: mysql:5.7
-    environment:
-      MYSQL_ROOT_PASSWORD: "123123"
+  debug:
+    image: iwara_debug
+    container_name: debug
     volumes:
-      - $PWD/data.sql:/docker-entrypoint-initdb.d/data.sql
+      - $PWD:/go/src/iwara
+    environment:
+      GOPROXY: "https://goproxy.io,direct"
+      GO111MODULE: "on"
+      GOPATH: "/go"
     ports:
-      - '3308:3306'
+      - "40000:40000"
+    command: /dlv --headless --listen=:40000 --api-version=2 exec /server
+    depends_on:
+      - database
+

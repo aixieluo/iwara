@@ -1,4 +1,4 @@
-FROM golang:latest
+FROM golang:latest as go6
 
 MAINTAINER xxy
 
@@ -8,9 +8,14 @@ WORKDIR $GOPATH/src/iwara
 
 COPY . $GOPATH/src/iwara
 
-RUN go get -u
+VOLUME ["$GOPATH/src/iwara", "/go/src/iwara"]
+
+#RUN go get -u
+RUN go build main.go
 
 EXPOSE 3939
 
+
 ENTRYPOINT ["go", "run", "main.go"]
+#ENTRYPOINT ["/go/src/iwara/main"]
 

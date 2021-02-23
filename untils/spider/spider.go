@@ -138,7 +138,7 @@ func NewCollector() *colly.Collector {
 		colly.UserAgent(RandomUserAgent()),
 		// colly.Async(true),
 	)
-	_ = c.SetProxy("http://127.0.0.1:1087")
+	// _ = c.SetProxy("http://127.0.0.1:1087")
 	var retryList map[string]int
 	c.OnError(func(res *colly.Response, e error) {
 		url := res.Request.URL.String()

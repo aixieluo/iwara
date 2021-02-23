@@ -1,0 +1,31 @@
+FROM golang:latest as go6
+
+MAINTAINER xxy
+
+ENV GOPROXY=https://goproxy.io,direct
+
+WORKDIR $GOPATH/src/iwara
+
+COPY . $GOPATH/src/iwara
+
+VOLUME ["$GOPATH/src/iwara", "/go/src/iwara"]
+
+EXPOSE 3939
+
+# Build Delve
+RUN go get github.com/go-delve/delve/cmd/dlv
+
+# Compile the application with the optimizations turned off
+# This is important for the debugger to correctly work with the binary
+RUN go build -gcflags "all=-N -l" -o /server
+
+# Final stage
+FROM debian:buster
+
+EXPOSE 40000
+
+WORKDIR /
+COPY --from=go6 /go/bin/dlv /
+COPY --from=go6 /server /
+
+CMD ["/dlv", "--listen=:40000", "--headless=true", "--api-version=2", "--accept-multiclient", "exec", "/server"]
