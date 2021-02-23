@@ -29,7 +29,7 @@ func push(db *gorm.DB)  {
 }
 
 func connect() *gorm.DB {
-	dsn := "root:@tcp(127.0.0.1:3306)/iwara?charset=utf8&parseTime=True&loc=Local"
+	dsn := "root:123123@tcp(database)/iwara?charset=utf8&parseTime=True&loc=Local"
 	db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	defer func() {
 		if err := recover(); err != nil {
